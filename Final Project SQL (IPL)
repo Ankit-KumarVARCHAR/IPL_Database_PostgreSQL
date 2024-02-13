@@ -1,0 +1,357 @@
+/*Q1-4
+--Create a table named ‘Deliveries’ with appropriate data types for columns.
+--Create a table named ‘Matches’ with appropriate data types for columns.
+--Import data from csv file ’IPL_matches.csv’ attached in resources to the table ‘matches’ which was created in Q1.
+--Import data from csv file ’IPL_Ball.csv’ attached in resources to the table ‘deliveries’ which was created in Q2.
+*/
+CREATE TABLE Deliveries (
+ID INT ,
+Inning INT,
+Over INT,
+Ball INT,
+Batsman VARCHAR(50),
+Non_Striker VARCHAR(50),
+Bowler VARCHAR(50),
+Batsman_Run INT,
+Extra_Runs INT,
+Total_Runs INT,
+Is_Wicket INT,
+Dismissal_Kind VARCHAR(50),
+Player_Dismissed VARCHAR(50),
+Fielder VARCHAR(50),
+Extra_Type VARCHAR(50),
+Batting_Team VARCHAR(50),
+Bowling_Team VARCHAR(50)
+);
+
+Copy Deliveries FROM 'C:\Program Files\PostgreSQL\16\data\data_copy\Data_For_Final_ProjectIPLMatches_IPLBall\IPLMatches+IPLBall\IPL_Ball.csv' DELIMITER ',' CSV HEADER;
+
+CREATE TABLE Matches (
+ID INT PRIMARY KEY,
+City VARCHAR(50),
+Date DATE,
+Player_Of_Match VARCHAR(50),
+Venue VARCHAR(255),
+Neutral_Venue INT,
+Team1 VARCHAR(255),
+Team2 VARCHAR(255),
+Toss_Winner VARCHAR(255),
+Toss_Decision VARCHAR(25),
+Winner VARCHAR(255),
+Result VARCHAR(255),
+Result_Margin INT,
+Eliminator VARCHAR,
+Method VARCHAR,	
+Umpire1 VARCHAR,
+Umpire2 VARCHAR
+);
+
+COPY Matches FROM 'C:\Program Files\PostgreSQL\16\data\data_copy\Data_For_Final_ProjectIPLMatches_IPLBall\IPLMatches+IPLBall\IPL_matches.csv' DELIMITER ',' CSV HEADER;
+
+SELECT * FROM Matches;
+SELECT * FROM Deliveries;
+
+DROP TABLE Matches;
+DROP TABLE Deliveries;
+
+/*Q5*/
+--Select the top 20 rows of the deliveries table after ordering them by id, inning, over, ball in ascending order.
+SELECT *
+FROM Deliveries
+ORDER BY ID, Inning, Over, Ball
+LIMIT 20;
+
+/*Q6*/
+--Select the top 20 rows of the matches table.
+SELECT * FROM Matches
+LIMIT 20;
+--module test
+SELECT Toss_Winner, Toss_Decision
+FROM matches
+ORDER BY Date, id
+LIMIT 1;
+
+
+/*Q7*/
+--Fetch data of all the matches played on 2nd May 2013 from the matches table..
+SELECT *
+FROM Matches
+WHERE Date = '2013-05-02';
+
+--module test
+SELECT Winner
+FROM matches
+WHERE Date = '2013-05-02';
+
+
+
+/*Q8*/
+--Fetch data of all the matches where the result mode is ‘runs’ and margin of victory is more than 100 runs.
+SELECT *
+FROM Matches
+WHERE Result = 'runs' AND Result_Margin > 100;
+
+--module test
+SELECT COUNT(*)
+FROM matches
+WHERE Result_Margin > 100
+AND Result NOT LIKE '%tie%';
+
+
+/*Q9*/
+--Fetch data of all the matches where the final scores of both teams tied and order it in descending order of the date.
+SELECT *
+FROM Matches
+WHERE Result = 'tie'
+ORDER BY Date DESC;
+
+--module test
+SELECT COUNT(*)
+FROM matches
+WHERE Date = '2020-10-18'
+AND Result LIKE '%tie%';
+
+
+
+/*Q10*/
+--Get the count of cities that have hosted an IPL match.
+SELECT COUNT(DISTINCT City) AS City_Count
+FROM Matches;
+
+--final test
+
+
+/*Q11*/
+/*Create table deliveries_v02 with all the columns of the table ‘deliveries’ and an additional column ball_result containing values boundary, dot or other depending on the total_run (boundary for >= 4, dot for 0 and other for any other number)
+(Hint 1 : CASE WHEN statement is used to get condition based results)
+(Hint 2: To convert the output data of select statement into a table, you can use a subquery. 
+Create table table_name as [entire select statement].*/
+CREATE TABLE deliveries_v02 AS
+SELECT *,
+       CASE
+           WHEN Total_Runs >= 4 THEN 'boundary'
+           WHEN Total_Runs = 0 THEN 'dot'
+           ELSE 'other'
+       END AS ball_result
+FROM deliveries;
+
+/*Q12*/
+--Write a query to fetch the total number of boundaries and dot balls from the deliveries_v02 table.
+SELECT
+    ball_result,
+    COUNT(*) AS count
+FROM
+    deliveries_v02
+WHERE
+    ball_result IN ('boundary', 'dot')
+GROUP BY
+    ball_result;
+	
+--module test
+SELECT COUNT(*)
+FROM deliveries_v02
+WHERE ball_result = 'boundary';
+SELECT COUNT(*)
+FROM deliveries_v02
+WHERE ball_result = 'dot';
+
+
+/*Q13*/
+--Write a query to fetch the total number of boundaries scored by each team from the deliveries_v02 table and order it in descending order of the number of boundaries scored.
+SELECT
+    Batting_Team,
+    COUNT(*) AS Total_Boundaries
+FROM
+    deliveries_v02
+WHERE
+    ball_result = 'boundary'
+GROUP BY
+    Batting_Team
+ORDER BY
+    Total_Boundaries DESC;
+	
+/*Q14*/	
+--Write a query to fetch the total number of dot balls bowled by each team and order it in descending order of the total number of dot balls bowled.
+SELECT
+    Bowling_Team,
+    COUNT(*) AS Total_Dot_Balls
+FROM
+    deliveries_v02
+WHERE
+    ball_result = 'dot'
+GROUP BY
+    Bowling_Team
+ORDER BY
+    Total_Dot_Balls DESC;
+
+/*Q15*/
+--Write a query to fetch the total number of dismissals by dismissal kinds where dismissal kind is not NA
+SELECT
+    Dismissal_Kind,
+    COUNT(*) AS Total_Dismissals
+FROM
+    deliveries_v02
+WHERE
+    Dismissal_Kind <> 'NA'
+GROUP BY
+    Dismissal_Kind;
+
+/*Q16*/
+--Write a query to get the top 5 bowlers who conceded maximum extra runs from the deliveries table
+SELECT
+    Bowler,
+    SUM(Extra_Runs) AS Total_Extra_Runs
+FROM
+    deliveries
+GROUP BY
+    Bowler
+ORDER BY
+    Total_Extra_Runs DESC
+LIMIT 5;
+
+--module test 
+SELECT Bowler, SUM(Extra_Runs) AS Total_Extra_Runs
+FROM deliveries
+GROUP BY Bowler
+ORDER BY Total_Extra_Runs DESC
+LIMIT 1;
+
+
+/*Q17*/
+--Write a query to create a table named deliveries_v03 with all the columns of deliveries_v02 table and two additional column (named venue and match_date) of venue and date from table matches
+SELECT * FROM deliveries;
+SELECT * FROM deliveries_v02;
+SELECT * FROM matches;
+SELECT * FROM deliveries_v03;
+
+CREATE TABLE deliveries_v03 AS
+SELECT d.*, m.Venue, m.Date AS match_date
+FROM deliveries_v02 AS d
+JOIN matches AS m ON d.id = m.ID;
+
+/*Q18*/
+--Write a query to fetch the total runs scored for each venue and order it in the descending order of total runs scored.
+SELECT Venue, SUM(Total_Runs) AS Total_Runs_Scored
+FROM deliveries_v03
+GROUP BY Venue
+ORDER BY Total_Runs_Scored DESC;
+
+/*Q19*/
+--Write a query to fetch the year-wise total runs scored at Eden Gardens and order it in the descending order of total runs scored.
+SELECT EXTRACT(YEAR FROM match_date) AS Year,
+       SUM(Total_Runs) AS Total_Runs_Scored
+FROM deliveries_v03
+WHERE Venue = 'Eden Gardens'
+GROUP BY EXTRACT(YEAR FROM match_date)
+ORDER BY Total_Runs_Scored DESC;
+
+/*Q20*/
+/*
+Get unique team1 names from the matches table, you will notice that there are two entries for 
+Rising Pune Supergiant one with Rising Pune Supergiant and another one with Rising Pune Supergiants.  
+Your task is to create a matches_corrected table with two additional columns team1_corr and team2_corr 
+containing team names with replacing Rising Pune Supergiants with Rising Pune Supergiant. 
+Now analyse these newly created columns.
+*/
+CREATE TABLE matches_corrected AS
+SELECT *,
+       CASE
+           WHEN Team1 = 'Rising Pune Supergiants' THEN 'Rising Pune Supergiant'
+           ELSE Team1
+       END AS team1_corr,
+       CASE
+           WHEN Team2 = 'Rising Pune Supergiants' THEN 'Rising Pune Supergiant'
+           ELSE Team2
+       END AS team2_corr
+FROM matches;
+
+SELECT * FROM deliveries;
+SELECT * FROM deliveries_v02;
+SELECT * FROM matches;
+SELECT * FROM deliveries_v03;
+SELECT * FROM matches_corrected;
+
+/*Q21*/
+/*
+Create a new table deliveries_v04 with the first column as ball_id containing information of match_id, 
+inning, over and ball separated by ‘-’ (For ex. 335982-1-0-1 match_id-inning-over-ball) and rest of the 
+columns same as deliveries_v03)
+*/
+CREATE TABLE deliveries_v04 AS
+SELECT CONCAT(id, '-', inning, '-', over, '-', ball) AS ball_id,
+       d.*
+FROM deliveries_v03 AS d;
+
+SELECT * FROM deliveries;
+SELECT * FROM deliveries_v02;
+SELECT * FROM matches;
+SELECT * FROM deliveries_v03;
+SELECT * FROM matches_corrected;
+SELECT * FROM deliveries_v04;
+
+/*Q22*/
+--Compare the total count of rows and total count of distinct ball_id in deliveries_v04;
+-- Total count of rows
+SELECT COUNT(*) AS total_rows FROM deliveries_v04;
+
+-- Total count of distinct ball_id
+SELECT COUNT(DISTINCT ball_id) AS distinct_ball_id FROM deliveries_v04;
+
+/*Q23*/
+/*
+SQL Row_Number() function is used to sort and assign row numbers to data rows in the presence of multiple groups. 
+For example, to identify the top 10 rows which have the highest order amount in each region, we can use row_number 
+to assign row numbers in each group (region) with any particular order (decreasing order of order amount) and then 
+we can use this new column to apply filters. Using this knowledge, solve the following exercise. You can use hints 
+to create an additional column of row number.
+Create table deliveries_v05 with all columns of deliveries_v04 and an additional column for row number 
+partition over ball_id. (HINT : Syntax to add along with other columns,  row_number() over (partition by ball_id) 
+as r_num)
+*/
+CREATE TABLE deliveries_v05 AS
+SELECT *, ROW_NUMBER() OVER (PARTITION BY ball_id) AS r_num
+FROM deliveries_v04;
+
+SELECT * FROM matches;
+SELECT * FROM deliveries;
+SELECT * FROM matches_corrected;
+SELECT * FROM deliveries_v02;
+SELECT * FROM deliveries_v03;
+SELECT * FROM deliveries_v04;
+SELECT * FROM deliveries_v05;
+
+/*Q24*/
+/*
+Use the r_num created in deliveries_v05 to identify instances where ball_id is repeating. 
+(HINT : select * from deliveries_v05 WHERE r_num=2;)
+*/
+SELECT *
+FROM deliveries_v05
+WHERE r_num > 1;
+
+--Module Test
+SELECT ball_id, COUNT(*) AS num_instances
+FROM deliveries_v05
+GROUP BY ball_id
+HAVING COUNT(*) > 1;
+
+
+/*Q25*/
+/*
+Use subqueries to fetch data of all the ball_id which are repeating. 
+(HINT: SELECT * FROM deliveries_v05 WHERE ball_id in (select BALL_ID from deliveries_v05 WHERE r_num=2);
+*/
+SELECT *
+FROM deliveries_v05
+WHERE ball_id IN (SELECT ball_id FROM deliveries_v05 WHERE r_num > 1);
+
+/*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/
+
+\d deliveries_v05;
+
+
+
+
+
+
+
